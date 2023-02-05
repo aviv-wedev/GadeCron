@@ -1,0 +1,21 @@
+version: 0.2
+
+env:
+  secrets-manager:
+    ENVIRONMENT_FILE: pandazapi-$ENVIRONMENT-environment
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 14
+  build:
+    commands:
+      - echo Deploying projects
+      - echo "$ENVIRONMENT_FILE" > .env
+      - aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 150909075967.dkr.ecr.eu-central-1.amazonaws.com
+      - docker-compose -f docker-compose-$ENVIRONMENT-app.yml build
+      - docker push 150909075967.dkr.ecr.eu-central-1.amazonaws.com/pandazapi-$ENVIRONMENT/app:latest
+      - aws ecs update-service --force-new-deployment --service pandazapi-$ENVIRONMENT-app-service --cluster pandazapi-$ENVIRONMENT-main-cluster
+  post_build:
+    commands:
+      - echo Deploy complete
